@@ -1,13 +1,13 @@
-use rocket::serde::Serialize;
+use rocket::serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct ResponseBody {
     data: Option<serde_json::Value>,
     message: Option<String>,
 }
 
 //wrapping our response body and turning it into a json object
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Response {
     pub body: ResponseBody,
 }

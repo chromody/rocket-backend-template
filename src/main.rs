@@ -1,7 +1,7 @@
 #[macro_use] extern crate rocket;    
-
 mod api;
 mod responses;
+mod schema;
 
 #[launch]
 fn rocket() -> _ {
