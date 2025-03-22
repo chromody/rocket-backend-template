@@ -1,14 +1,15 @@
 use rocket::serde::{Deserialize, Serialize};
+use bcrypt::{hash, DEFAULT_COST};
 
 #[derive(Deserialize, Serialize)]
-pub struct Users {
+pub struct User {
     username: String,
     email: String,
     user_id: String,
     password: String,
 }
 
-impl Users {
+impl User {
     pub fn to_json(&self) -> serde_json::Value {
         serde_json::json!({
             "user": {
@@ -21,8 +22,10 @@ impl Users {
     }
 }
 
-pub fn create_user(username: String, email: String, user_id: String, password: String) -> Users {
-    Users {
+pub fn create_user(username: String, email: String, user_id: String, password: String) -> User {
+    let password = hash(password, DEFAULT_COST).unwrap();
+
+    User {
         username: username,
         email: email,
         user_id: user_id,
