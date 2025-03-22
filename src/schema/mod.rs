@@ -1,1 +1,2 @@
 //models
+pub mod schema;
