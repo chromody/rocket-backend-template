@@ -1,0 +1,2 @@
+//views
+pub mod responses;
