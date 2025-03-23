@@ -14,7 +14,9 @@ use regex::Regex;
 // import macro to create response
 use crate::responses::responses::Response; // Now Rust can find it
 use crate::new_response;
-use crate::schema::schema::{UserRegister, UserError};
+use crate::schema::schema::{User, UserError};
+#[macro_use]
+use crate::get_user_field;
 use crate::db::db::Database;
 
 
@@ -111,13 +113,13 @@ async fn get_user() -> Result<Json<Response>, (Status, Json<Response>)> {
 */
 
 
-#[post("/user/register", data = "<register_data>")]
-async fn register(db: &State<Database>, register_data: Json<UserRegister>) -> Result<Json<Response>, (Status, Json<Response>)> {
-    let collection: Collection<UserRegister> = db.client.lock().await.database("rocket-template").collection("users");
+#[post("/user", data = "<register_data>")]
+async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Json<Response>, (Status, Json<Response>)> {
+    let collection: Collection<User> = db.client.lock().await.database("rocket-template").collection("users");
 
     //using macro to create a new response
-    let user: UserRegister;
-    let user_result: Result<UserRegister, UserError> = UserRegister::new(register_data.get_username().to_string(), register_data.get_email().to_string(), register_data.get_password().to_string());
+    let user: User;
+    let user_result: Result<User, UserError> = User::register(get_user_field!(register_data, username), get_user_field!(register_data, email), "".to_string(), get_user_field!(register_data, password));
     match user_result {
         Ok(user_unwrapped) =>{
             user = user_unwrapped;
@@ -131,7 +133,7 @@ async fn register(db: &State<Database>, register_data: Json<UserRegister>) -> Re
                             json!(
                                 {
                                     "error": "Invalid email",
-                                    "email": register_data.get_email()
+                                    "email": get_user_field!(register_data, email)
                                 }
                             )
                         )
@@ -148,7 +150,7 @@ async fn register(db: &State<Database>, register_data: Json<UserRegister>) -> Re
                             json!(
                                 {
                                     "error": "Invalid password",
-                                    "password": register_data.get_password()
+                                    "password": get_user_field!(register_data, password)
                                 }
                             )
                         )
@@ -165,7 +167,7 @@ async fn register(db: &State<Database>, register_data: Json<UserRegister>) -> Re
                             json!(
                                 {
                                     "error": "Invalid username",
-                                    "username": register_data.get_username()
+                                    "username": get_user_field!(register_data, username)
                                 }
                             )
                         )
