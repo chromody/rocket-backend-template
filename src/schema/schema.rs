@@ -7,6 +7,7 @@ pub enum UserError {
     InvalidEmail,
     InvalidPassword,
     InvalidUsername,
+    InvalidId
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -18,11 +19,19 @@ pub struct User {
 }
 
 impl User {
-    pub fn register(username: String, email: String, _id: String, password: String) -> Result<Self, UserError> {
+    pub fn register(username: String, email: String, _id: Option<String>, password: String) -> Result<Self, UserError> {
         let EMAIL_REGEX: Regex = Regex::new(r".$").expect("Invalid regex");
         let PWD_REGEX: Regex = Regex::new(r".$").expect("Invalid regex");
         let UNAME_REGEX: Regex = Regex::new(r".$").expect("Invalid regex");
-        let id = ObjectId::new();
+        let id = match _id {
+            Some(id) => {
+                match ObjectId::parse_str(id) {
+                    Ok(object_id) => object_id,
+                    Err(e) => return Err(UserError::InvalidId),
+                }
+            }
+            None => ObjectId::new(),
+        };
 
         if !EMAIL_REGEX.is_match(&email) {
             return Err(UserError::InvalidEmail);
@@ -43,6 +52,7 @@ impl User {
             password: password,
         })
     }
+
     pub fn check_password(&self, password: &str) -> bool {
         bcrypt::verify(password, &self.password).unwrap()
     }

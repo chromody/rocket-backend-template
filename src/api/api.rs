@@ -29,28 +29,21 @@ fn index() -> Result<Json<Response>, Status> {
 }
     */
     
-/*
+
 #[get("/user")]
-async fn get_user() -> Result<Json<Response>, (Status, Json<Response>)> {
-    let user: User;
-    let user_result: Result<User, UserError> = User::new("Chromody".to_string(), "Chromody@chromody.com".to_string(), "Chromody".to_string(), "Chromody1234@".to_string());
-    match user_result {
-        Ok(user_unwrapped) =>{
-            user = user_unwrapped;
-        } //checking for each type of error
+async fn info() -> Result<Json<Response>, (Status, Json<Response>)> {
+    let user = User::register("Username".to_string(), "Email@Email.com".to_string(), Some("67df84c0386ceba9b9b3bc99".to_string()), "Password".to_string());
+    match user {
+        Ok(user) => {
+            let response = new_response!(user.to_json());
+            Ok(Json(response))
+        }
         Err(UserError::InvalidEmail) => {
             return Err(
                 (
                     Status::BadRequest,
                     Json(
-                        new_response!(
-                            json!(
-                                {
-                                    "message": "Invalid email",
-                                    "error": "Invalid email"
-                                }
-                            )
-                        )
+                        new_response!()
                     )
                 )
             );
@@ -60,14 +53,7 @@ async fn get_user() -> Result<Json<Response>, (Status, Json<Response>)> {
                 (
                     Status::BadRequest,
                     Json(
-                        new_response!(
-                            json!(
-                                {
-                                    "message": "Invalid password",
-                                    "error": "Invalid password"
-                                }
-                            )
-                        )
+                        new_response!()
                     )
                 )
             );
@@ -77,14 +63,7 @@ async fn get_user() -> Result<Json<Response>, (Status, Json<Response>)> {
                 (
                     Status::BadRequest,
                     Json(
-                        new_response!(
-                            json!(
-                                {
-                                    "message": "Invalid username",
-                                    "error": "Invalid username"
-                                }
-                            )
-                        )
+                        new_response!()
                     )
                 )
             );
@@ -94,23 +73,14 @@ async fn get_user() -> Result<Json<Response>, (Status, Json<Response>)> {
                 (
                     Status::InternalServerError,
                     Json(
-                        new_response!(
-                            json!(
-                                {
-                                    "message": "Internal server error",
-                                    "error": "Internal server error"
-                                }
-                            )
-                        )
+                        new_response!()
                     )
                 )
             );
         }
     }
-    let response = new_response!(json!(user.to_json()));
-    Ok(Json(response))
 }
-*/
+
 
 
 #[post("/user", data = "<register_data>")]
@@ -119,7 +89,7 @@ async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Jso
 
     //using macro to create a new response
     let user: User;
-    let user_result: Result<User, UserError> = User::register(get_user_field!(register_data, username), get_user_field!(register_data, email), "".to_string(), get_user_field!(register_data, password));
+    let user_result: Result<User, UserError> = User::register(get_user_field!(register_data, username), get_user_field!(register_data, email), None, get_user_field!(register_data, password));
     match user_result {
         Ok(user_unwrapped) =>{
             user = user_unwrapped;
@@ -214,5 +184,5 @@ async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Jso
 
 // Export the routes
 pub fn api_routes() -> Vec<Route> {
-    routes![register]
+    routes![info, register]
 }
