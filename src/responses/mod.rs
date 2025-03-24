@@ -1,2 +1,3 @@
 //views
-pub mod responses;
+pub mod network_responses;
+pub mod user_responses;

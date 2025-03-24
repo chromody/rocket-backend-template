@@ -1,4 +1,4 @@
-use mongodb::{Client, options::ClientOptions};
+use mongodb::{Client};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

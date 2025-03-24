@@ -1,14 +1,8 @@
 use rocket::serde::{Deserialize, Serialize};
 use bcrypt::{hash, DEFAULT_COST};
 use regex::Regex;
-use mongodb::bson::{oid::ObjectId, serde_helpers};
-
-pub enum UserError {
-    InvalidEmail,
-    InvalidPassword,
-    InvalidUsername,
-    InvalidId
-}
+use mongodb::bson::{oid::ObjectId};
+use crate::responses::user_responses::UserError; // Now Rust can find it
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
@@ -20,26 +14,26 @@ pub struct User {
 
 impl User {
     pub fn register(username: String, email: String, _id: Option<String>, password: String) -> Result<Self, UserError> {
-        let EMAIL_REGEX: Regex = Regex::new(r".$").expect("Invalid regex");
-        let PWD_REGEX: Regex = Regex::new(r".$").expect("Invalid regex");
-        let UNAME_REGEX: Regex = Regex::new(r".$").expect("Invalid regex");
+        let email_regex: Regex = Regex::new(r".$").expect("Invalid regex");
+        let pwd_regex: Regex = Regex::new(r".$").expect("Invalid regex");
+        let uname_regex: Regex = Regex::new(r".$").expect("Invalid regex");
         let id = match _id {
             Some(id) => {
                 match ObjectId::parse_str(id) {
                     Ok(object_id) => object_id,
-                    Err(e) => return Err(UserError::InvalidId),
+                    Err(_) => return Err(UserError::InvalidId),
                 }
             }
             None => ObjectId::new(),
         };
 
-        if !EMAIL_REGEX.is_match(&email) {
+        if !email_regex.is_match(&email) {
             return Err(UserError::InvalidEmail);
         }
-        if !PWD_REGEX.is_match  (&password) {
+        if !pwd_regex.is_match  (&password) {
             return Err(UserError::InvalidPassword);
         }
-        if !UNAME_REGEX.is_match(&username) {
+        if !uname_regex.is_match(&username) {
             return Err(UserError::InvalidUsername);
         }
 

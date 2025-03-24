@@ -1,2 +1,3 @@
 # rocket-backend-template
- A simple template that uses Rocket(Rust) for the backend + mongo
+ A simple mvc template that uses Rocket(Rust) for the backend + mongodb with JWTs for authentication\
+ This will be wrapped with docker
