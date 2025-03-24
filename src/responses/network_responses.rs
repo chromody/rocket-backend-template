@@ -1,11 +1,6 @@
 use rocket::serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct User {
-    pub id: u32,
-    pub name: String,
-}
+use crate::schema::user_schema::User;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum ResponseBody {

@@ -20,7 +20,7 @@ async fn info() -> Result<Json<NetworkResponse>, (Status, Json<NetworkResponse>)
     let user = User::register("Username".to_string(), "Email@Email.com".to_string(), Some("67df84c0386ceba9b9b3bc99".to_string()), "Password".to_string());
     match user {
         Ok(user) => {
-            let response = NetworkResponse { body: ResponseBody::Data(user.to_json()) };
+            let response = NetworkResponse { body: ResponseBody::User(user) };
             Ok(Json(response))
         }
         Err(UserError::InvalidEmail) => {
@@ -120,7 +120,7 @@ async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Jso
     }
 
     if collection.insert_one(&user).await.is_ok() {
-        let response = NetworkResponse { body: ResponseBody::Data(user.to_json()) };
+        let response = NetworkResponse { body: ResponseBody::User(user) };
         Ok(Json(response))
     } else {
         Err((
