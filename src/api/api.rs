@@ -2,73 +2,42 @@ use rocket::http::Status;
 use rocket::serde::json::Json;
 use serde_json::json;
 use rocket::Route;
+use mongodb::bson::{oid::ObjectId};
 
 use rocket::State;
 use mongodb::{Collection};
 use mongodb::bson::{doc, from_bson};
 
 // import macro to create response
-use crate::responses::network_responses::{NetworkResponse, ResponseBody}; // Now Rust can find it
+use crate::responses::network_responses::{NetworkResponse, ResponseBody, Response}; // Now Rust can find it
 use crate::responses::user_responses::UserError; // Now Rust can find it
 use crate::schema::user_schema::User;
 use crate::get_user_field;
 use crate::schema::request_schema::LoginRequest;
 use crate::db::db::Database;
-use crate::schema::jwt_schema::create_jwt;
+use crate::schema::jwt_schema::{JWT, create_jwt};
 
 #[get("/user")]
-async fn info() -> Result<Json<NetworkResponse>, (Status, Json<NetworkResponse>)> {
-    let user = User::register("Username".to_string(), "Email@Email.com".to_string(), Some("67df84c0386ceba9b9b3bc99".to_string()), "Password".to_string());
-    match user {
-        Ok(user) => {
-            let response = NetworkResponse { body: ResponseBody::User(user) };
+async fn info(db: &State<Database>, key: Result<JWT, NetworkResponse>) -> Result<Json<Response>, NetworkResponse> {
+    let key = key?;
+
+    // Since sub_id is a String, pass it directly as a reference
+    let user_id = &key.claims.sub_id;
+
+    let collection = db.client.lock().await.database("rocket-template").collection::<User>("users");
+
+    match collection.find_one(doc! { "_id": user_id }).await {
+        Ok(Some(user)) => {
+            let response = Response { body: ResponseBody::User(user) };
             Ok(Json(response))
         }
-        Err(UserError::InvalidEmail) => {
-            return Err(
-                (
-                    Status::BadRequest,
-                    Json(
-                        NetworkResponse { body: ResponseBody::Message("Error".to_string()) }
-                    )
-                )
-            );
-        }
-        Err(UserError::InvalidPassword) => {
-            return Err(
-                (
-                    Status::BadRequest,
-                    Json(
-                        NetworkResponse { body: ResponseBody::Message("Error".to_string()) }
-                    )
-                )
-            );
-        }
-        Err(UserError::InvalidUsername) => {
-            return Err(
-                (
-                    Status::BadRequest,
-                    Json(
-                        NetworkResponse { body: ResponseBody::Message("Error".to_string()) }
-                    )
-                )
-            );
-        }
-        Err(_) => {
-            return Err(
-                (
-                    Status::InternalServerError,
-                    Json(
-                        NetworkResponse { body: ResponseBody::Message("Error".to_string()) }
-                    )
-                )
-            );
-        }
+        Ok(None) => Err(NetworkResponse::NotFound("User not found".to_string())),
+        Err(_) => Err(NetworkResponse::Conflict("Internal Server Error".to_string())),
     }
 }
 
 #[post("/user", data = "<register_data>")]
-async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Json<NetworkResponse>, (Status, Json<NetworkResponse>)> {
+async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Json<Response>, (Status, Json<Response>)> {
     let collection: Collection<User> = db.client.lock().await.database("rocket-template").collection("users");
 
     //using macro to create a new response
@@ -83,7 +52,7 @@ async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Jso
                 (
                     Status::BadRequest,
                     Json(
-                        NetworkResponse { body: ResponseBody::Message("Invalid Email".to_string()) }
+                        Response { body: ResponseBody::Message("Invalid Email".to_string()) }
                     )
                 )
             );
@@ -93,7 +62,7 @@ async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Jso
                 (
                     Status::BadRequest,
                     Json(
-                        NetworkResponse { body: ResponseBody::Message("Invalid Password".to_string()) }
+                        Response { body: ResponseBody::Message("Invalid Password".to_string()) }
                     )
                 )
             );
@@ -103,7 +72,7 @@ async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Jso
                 (
                     Status::BadRequest,
                     Json(
-                        NetworkResponse { body: ResponseBody::Message("Invalid Username".to_string()) }
+                        Response { body: ResponseBody::Message("Invalid Username".to_string()) }
                     )
                 )
             );
@@ -113,7 +82,7 @@ async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Jso
                 (
                     Status::InternalServerError,
                     Json(
-                        NetworkResponse { body: ResponseBody::Message("Error".to_string()) }
+                        Response { body: ResponseBody::Message("Error".to_string()) }
                     )
                 )
             );
@@ -121,21 +90,20 @@ async fn register(db: &State<Database>, register_data: Json<User>) -> Result<Jso
     }
 
     if collection.insert_one(&user).await.is_ok() {
-        let response = NetworkResponse { body: ResponseBody::User(user) };
+        let response = Response { body: ResponseBody::User(user) };
         Ok(Json(response))
     } else {
         Err((
             Status::InternalServerError,
             Json(
-                NetworkResponse { body: ResponseBody::Message("Error".to_string()) }
+                Response { body: ResponseBody::Message("Error".to_string()) }
             )
         ))
     }
 }
 
-//TODO use JWT
 #[post("/login", data = "<login_data>")]
-async fn login(db: &State<Database>, login_data: Json<LoginRequest>) -> Result<Json<NetworkResponse>, (Status, Json<NetworkResponse>)> {
+async fn login(db: &State<Database>, login_data: Json<LoginRequest>) -> Result<Json<Response>, NetworkResponse> {
     let username = &login_data.username;
     let password = &login_data.password;
 
@@ -144,23 +112,23 @@ async fn login(db: &State<Database>, login_data: Json<LoginRequest>) -> Result<J
         Ok(Some(doc)) => {
             if let Ok(user) = from_bson::<User>(doc) {
                 if user.check_password(password) {
-                    match create_jwt(user.get_id().unwrap()) {
+                    match create_jwt(user.get_id().unwrap(), user.get_username()) {
                         Ok(token) => {
                             return Ok(Json(
-                                NetworkResponse { body: ResponseBody::Message(token) }
+                                Response { body: ResponseBody::Message(token) }
                             ));
                         },
                         Err(err) => {
-                            return Err((Status::BadRequest, Json(NetworkResponse { body: ResponseBody::Message(err.to_string()) })));
+                            return Err(NetworkResponse::BadRequest(err.to_string()));
                         }
                     }
                     
                 }
             }
-            Err((Status::BadRequest, Json(NetworkResponse { body: ResponseBody::Message("Invalid Password".to_string()) })))
+            return Err(NetworkResponse::BadRequest("Invalid password".to_string()));
         }
-        Ok(None) => Err((Status::BadRequest, Json(NetworkResponse { body: ResponseBody::Message("User not found".to_string()) }))),
-        Err(_) => Err((Status::InternalServerError, Json(NetworkResponse { body: ResponseBody::Message("Error".to_string()) }))),
+        Ok(None) => Err(NetworkResponse::BadRequest("User not found".to_string())),
+        Err(_) => Err(NetworkResponse::Conflict("Internal Service Error".to_string())),
     }
 }
 
