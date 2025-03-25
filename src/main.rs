@@ -1,4 +1,5 @@
 #[macro_use] extern crate rocket;    
+use dotenvy::dotenv;
 
 mod api;
 mod responses;
@@ -10,6 +11,7 @@ use crate::db::db::init_db;
 #[launch]
 async fn rocket() -> _ {
     let db = init_db().await;
+    dotenv().ok();
 
     rocket::build()
         .manage(db)

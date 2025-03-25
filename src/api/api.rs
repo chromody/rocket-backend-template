@@ -14,6 +14,7 @@ use crate::schema::user_schema::User;
 use crate::get_user_field;
 use crate::schema::request_schema::LoginRequest;
 use crate::db::db::Database;
+use crate::schema::jwt_schema::create_jwt;
 
 #[get("/user")]
 async fn info() -> Result<Json<NetworkResponse>, (Status, Json<NetworkResponse>)> {
@@ -143,9 +144,17 @@ async fn login(db: &State<Database>, login_data: Json<LoginRequest>) -> Result<J
         Ok(Some(doc)) => {
             if let Ok(user) = from_bson::<User>(doc) {
                 if user.check_password(password) {
-                    return Ok(Json(
-                        NetworkResponse { body: ResponseBody::Message("Successful login".to_string()) }
-                    ));
+                    match create_jwt(user.get_id().unwrap()) {
+                        Ok(token) => {
+                            return Ok(Json(
+                                NetworkResponse { body: ResponseBody::Message(token) }
+                            ));
+                        },
+                        Err(err) => {
+                            return Err((Status::BadRequest, Json(NetworkResponse { body: ResponseBody::Message(err.to_string()) })));
+                        }
+                    }
+                    
                 }
             }
             Err((Status::BadRequest, Json(NetworkResponse { body: ResponseBody::Message("Invalid Password".to_string()) })))
