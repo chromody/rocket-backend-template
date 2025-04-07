@@ -1,0 +1,6 @@
+services:
+  backend:
+    image: rocket-backend-template:latest
+    ports:
+      - "3000:3000"
+    container_name: backend-container
