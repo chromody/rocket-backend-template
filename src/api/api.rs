@@ -132,9 +132,17 @@ async fn login(db: &State<Database>, login_data: Json<LoginRequest>) -> Result<J
     }
 }
 
-
+#[get("/alive")]
+async fn alive() -> Result<Json<serde_json::Value>, Status> {
+    Ok(Json(json!(
+            {
+                "message": "ALIVE"
+            }
+        )
+    ))
+}
 
 // Export the routes
 pub fn api_routes() -> Vec<Route> {
-    routes![info, register, login]
+    routes![info, register, login, alive]
 }

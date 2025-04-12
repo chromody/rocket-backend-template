@@ -3,7 +3,7 @@ use jsonwebtoken::errors::{Error, ErrorKind};
 use mongodb::bson::{oid::ObjectId};
 
 use chrono::Utc;
-use jsonwebtoken::{encode, decode, DecodingKey, EncodingKey, Algorithm, Header, Validation}; // 👈 New!
+use jsonwebtoken::{encode, decode, DecodingKey, EncodingKey, Algorithm, Header, Validation}; 
 use std::env;
 use dotenvy::dotenv;
 
@@ -26,7 +26,7 @@ pub struct JWT {
 
 
 pub fn create_jwt(id: ObjectId, username: String) -> Result<String, Error> {
-    let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set."); // 👈 New!
+    let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set."); 
 
     let expiration = Utc::now().checked_add_signed(chrono::Duration::seconds(60)).expect("Invalid timestamp").timestamp();
     
@@ -45,7 +45,6 @@ fn decode_jwt(token: String) -> Result<Claims, ErrorKind> {
     let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
     let token = token.trim_start_matches("Bearer").trim();
 
-    // 👇 New!
     match decode::<Claims>(
         &token,
         &DecodingKey::from_secret(secret.as_bytes()),

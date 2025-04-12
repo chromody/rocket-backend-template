@@ -3,4 +3,21 @@ services:
     image: rocket-backend-template:latest
     ports:
       - "3000:3000"
-    container_name: backend-container
+    environment:
+      # Tell your app how to reach MongoDB:
+      MONGO_URI: mongodb://mongo:27017/rocket-template
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:6.0
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      # Exposes it on localhost:27017 if you need local access
+      - "27018:27017"
+
+volumes:
+  mongo_data:
