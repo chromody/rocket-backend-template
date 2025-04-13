@@ -4,10 +4,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Tell your app how to reach MongoDB:
+      #Tell your app how to reach MongoDB:
       MONGO_URI: mongodb://mongo:27017/rocket-template
     depends_on:
       - mongo
+
 
   mongo:
     image: mongo:6.0

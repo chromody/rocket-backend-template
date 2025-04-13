@@ -10,8 +10,9 @@ use crate::db::db::init_db;
 
 #[launch]
 async fn rocket() -> _ {
-    let db = init_db().await;
     dotenv().ok();
+
+    let db = init_db().await;
 
     rocket::build()
         .manage(db)
