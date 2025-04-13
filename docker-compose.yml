@@ -6,6 +6,7 @@ services:
     environment:
       #Tell your app how to reach MongoDB:
       MONGO_URI: mongodb://mongo:27017/rocket-template
+      JWT_SECRET: SECRET
     depends_on:
       - mongo
 
